@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gergovie : L'Épopée 3D</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            font-family: 'Palatino', Georgia, serif;
+            background: #0a0a1a;
+            color: white;
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        #container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .hud {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            pointer-events: none;
+        }
+
+        .title-panel {
+            padding: 80px 60px;
+            text-shadow: 2px 2px 8px rgba(0,0,0,0.95);
+            min-height: 50%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .title-panel h1 {
+            font-size: 64px;
+            font-weight: bold;
+            margin-bottom: 40px;
+            color: #D4A574;
+            letter-spacing: 3px;
+            opacity: 0;
+            animation: fadeInDown 0.8s ease-out forwards;
+        }
+
+        .narrative-text {
+            font-size: 22px;
+            max-width: 900px;
+            opacity: 0;
+            line-height: 1.8;
+            text-shadow: 1px 1px 4px rgba(0,0,0,0.9);
+            color: #E8D4B8;
+            min-height: 120px;
+            animation: fadeInUp 1.2s ease-out forwards;
+        }
+
+        .narrative-text strong {
+            color: #FFD700;
+            font-weight: bold;
+        }
+
+        .narrative-text em {
+            color: #B8956A;
+            font-style: italic;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+            }
+            to {
+                opacity: 0;
+            }
+        }
+
+        .text-fading-out {
+            animation: fadeOut 0.6s ease-out forwards;
+        }
+
+        .control-panel {
+            background: linear-gradient(to top, #000000, rgba(0,0,0,0.8), transparent);
+            padding: 50px 60px;
+            pointer-events: auto;
+        }
+
+        .progress-bar {
+            height: 3px;
+            background: #333;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(to right, #b45309, #f59e0b);
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+
+        .controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        button {
+            padding: 16px 40px;
+            font-size: 18px;
+            font-family: inherit;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            pointer-events: auto;
+        }
+
+        #playBtn {
+            background: linear-gradient(135deg, #b45309 0%, #92400e 100%);
+            color: white;
+        }
+
+        #playBtn:hover {
+            background: linear-gradient(135deg, #a16207 0%, #7c2d12 100%);
+            transform: scale(1.05);
+        }
+
+        #playBtn:disabled {
+            background: #666;
+            cursor: not-allowed;
+            transform: scale(1);
+        }
+
+        .scene-info {
+            text-align: center;
+            color: #D4A574;
+            font-weight: bold;
+        }
+
+        .scene-info .current {
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+
+        .scene-info .total {
+            font-size: 14px;
+            color: #999;
+        }
+
+        .metadata {
+            font-size: 13px;
+            color: #999;
+            text-align: right;
+            line-height: 1.6;
+        }
+
+        .footer-legend {
+            text-align: center;
+            font-size: 12px;
+            color: #555;
+            margin-top: 20px;
+            border-top: 1px solid #333;
+            padding-top: 15px;
+        }
+
+        .author-credit {
+            position: absolute;
+            bottom: 15px;
+            right: 30px;
+            font-size: 11px;
+            color: #666;
+            text-align: right;
+            line-height: 1.4;
+            pointer-events: auto;
+        }
+
+        .author-credit strong {
+            color: #999;
+        }
+
+        @media (max-width: 768px) {
+            .title-panel {
+                padding: 40px 30px;
+            }
+
+            .title-panel h1 {
+                font-size: 48px;
+                margin-bottom: 20px;
+            }
+
+            .narrative-text {
+                font-size: 18px;
+                line-height: 1.6;
+            }
+
+            .controls {
+                flex-direction: column;
+                gap: 20px;
+            }
+
+            button {
+                padding: 12px 24px;
+                font-size: 14px;
+            }
+
+            .author-credit {
+                bottom: 120px;
+                font-size: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="container"></div>
+
+    <div class="hud">
+        <div class="title-panel">
+            <h1 id="sceneTitle">Gergovie</h1>
+            <div class="narrative-text" id="narrativeText">
+                L'épopée des Arvernes commence...
+            </div>
+        </div>
+
+        <div class="control-panel">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+
+            <div class="controls">
+                <button id="playBtn">▶ LANCER L'ÉPOPÉE</button>
+                <div class="scene-info">
+                    <div class="current" id="sceneNumber">1</div>
+                    <div class="total">sur 6 actes</div>
+                </div>
+                <div class="metadata">
+                    <p>Reconstitution 3D</p>
+                    <p>Musique : <em>Celestial Clash of Empires</em></p>
+                </div>
+            </div>
+
+            <div class="footer-legend">
+                Épopée textuelle synchronisée • Reconstitution 3D de Gergovie • 5 minutes
+            </div>
+        </div>
+    </div>
+
+    <div class="author-credit">
+        <p>Basé sur les recherches de</p>
+        <p><strong>H. G. Ghriscelli</strong></p>
+        <p><em>Gergovie aux Côtes de Clermont</em></p>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // Configuration
+        const container = document.getElementById('container');
+        const playBtn = document.getElementById('playBtn');
+        const progressFill = document.getElementById('progressFill');
+        const sceneTitle = document.getElementById('sceneTitle');
+        const narrativeText = document.getElementById('narrativeText');
+        const sceneNumber = document.getElementById('sceneNumber');
+
+        const scenes = [
+            {
+                title: "Les Arvernes",
+                text: "<strong>Au pays des Arvernes</strong>\n\nLe nom même de ce peuple évoque la puissance. <em>Gargerna, gorgobina</em> : du gaulois <strong>gorgo</strong>, fort et puissant, et de <strong>dweina</strong>, redoutable. Les Arvernes furent le cœur battant de la Gaule libre, une nation de guerriers et de druides.",
+                duration: 28,
+                cameraPos: { x: 0, y: 40, z: 100 },
+                cameraTarget: { x: 0, y: 30, z: 0 }
+            },
+            {
+                title: "Nemossos",
+                text: "<strong>La capitale sacrée</strong>\n\n<em>Nemossos</em>, ville sacrée des Arvernes. Une divinité gauloise donnait son nom à cette capitale, qui se retrouve aujourd'hui au pied de Clermont-Ferrand, dans le nom ancien de <strong>Tremonteix</strong>. Les druides construisirent cette cité selon les forces de la terre.",
+                duration: 28,
+                cameraPos: { x: 80, y: 50, z: 80 },
+                cameraTarget: { x: 0, y: 25, z: 0 }
+            },
+            {
+                title: "Gergovie",
+                text: "<strong>La forteresse inexpugnable</strong>\n\n<em>Gergovie</em> s'élève à six cent quarante-cinq mètres sur les Côtes de Clermont. Ses magnifiques remparts, qui avaient résisté aux sièges des Cimbres et des Teutons, se dressaient comme un défi vers le ciel. Trois cents hectares de puissance gauloise.",
+                duration: 30,
+                cameraPos: { x: -80, y: 60, z: 80 },
+                cameraTarget: { x: 0, y: 40, z: 0 }
+            },
+            {
+                title: "Vercingetorix",
+                text: "<strong>Le dernier roi</strong>\n\nCampé sur la montagne même, le roi arverne avait autour de lui les troupes de chaque peuple gaulois, couvrant toutes les collines de cette chaîne formidable. Ses guerriers offraient de toutes parts un aspect <em>effrayant</em>. La Gaule entière s'était levée pour sa liberté.",
+                duration: 32,
+                cameraPos: { x: 100, y: 80, z: 100 },
+                cameraTarget: { x: 0, y: 50, z: 0 }
+            },
+            {
+                title: "Les Constellations",
+                text: "<strong>Les mystères du ciel</strong>\n\nAu-dessus de ces terres s'étendaient les constellations que les Gaulois contemplaient. <strong>Épona</strong>, la jument sacrée, symbole de puissance. La <strong>Grande Ourse</strong> et ses oursons. Le <strong>Chien</strong> qui marquait le début de l'ancienne année. Le <strong>Lièvre</strong> aux oreilles dévorées.",
+                duration: 36,
+                cameraPos: { x: 0, y: 120, z: 120 },
+                cameraTarget: { x: 0, y: 50, z: 0 }
+            },
+            {
+                title: "L'Oppidum",
+                text: "<strong>Le mystère enfin éclairci</strong>\n\nPendant deux mille ans, le vrai site de Gergovie demeura caché. Ce n'est qu'en <strong>1937</strong> que le professeur <strong>Maurice Busset</strong> découvrit enfin l'oppidum véritable, avec ses remparts grandioses. Les énigmes historiques furent enfin résolues.",
+                duration: 39,
+                cameraPos: { x: -120, y: 90, z: 120 },
+                cameraTarget: { x: 0, y: 45, z: 0 }
+            }
+        ];
+
+        // State
+        let isPlaying = false;
+        let currentScene = 0;
+        let audioElement = null;
+        let textAnimationTimeout = null;
+
+        // Three.js setup
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0a0a1a);
+        scene.fog = new THREE.Fog(0x0a0a1a, 500, 2000);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 5000);
+        camera.position.set(0, 40, 100);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        container.appendChild(renderer.domElement);
+
+        // Lumières
+        const ambientLight = new THREE.AmbientLight(0xFFD700, 0.8);
+        scene.add(ambientLight);
+
+        const directionalLight = new THREE.DirectionalLight(0xFFE5B4, 1);
+        directionalLight.position.set(100, 100, 50);
+        directionalLight.castShadow = true;
+        directionalLight.shadow.mapSize.width = 2048;
+        directionalLight.shadow.mapSize.height = 2048;
+        scene.add(directionalLight);
+
+        // Montagne
+        const mountainGeometry = new THREE.ConeGeometry(120, 150, 64);
+        const mountainMaterial = new THREE.MeshStandardMaterial({
+            color: 0x6B5344,
+            roughness: 0.8,
+            metalness: 0.1
+        });
+        const mountain = new THREE.Mesh(mountainGeometry, mountainMaterial);
+        mountain.position.y = 75;
+        mountain.castShadow = true;
+        mountain.receiveShadow = true;
+        scene.add(mountain);
+
+        // Remparts
+        const wallsGroup = new THREE.Group();
+        for (let i = 0; i < 12; i++) {
+            const angle = (i / 12) * Math.PI * 2;
+            const x = Math.cos(angle) * 80;
+            const z = Math.sin(angle) * 80;
+            
+            const wallGeometry = new THREE.BoxGeometry(20, 60, 3);
+            const wallMaterial = new THREE.MeshStandardMaterial({
+                color: 0x8B7355,
+                roughness: 0.9,
+                metalness: 0
+            });
+            const wall = new THREE.Mesh(wallGeometry, wallMaterial);
+            wall.position.set(x, 100, z);
+            wall.rotation.y = angle;
+            wall.castShadow = true;
+            wall.receiveShadow = true;
+            wallsGroup.add(wall);
+        }
+        scene.add(wallsGroup);
+
+        // Terrain
+        const terrainGeometry = new THREE.PlaneGeometry(500, 500, 32, 32);
+        const terrainMaterial = new THREE.MeshStandardMaterial({
+            color: 0x3D2817,
+            roughness: 0.95,
+            metalness: 0
+        });
+        const positionAttribute = terrainGeometry.getAttribute('position');
+        const positions = positionAttribute.array;
+        for (let i = 2; i < positions.length; i += 3) {
+            positions[i] = Math.random() * 10 - 5;
+        }
+        positionAttribute.needsUpdate = true;
+        terrainGeometry.computeVertexNormals();
+        
+        const terrain = new THREE.Mesh(terrainGeometry, terrainMaterial);
+        terrain.rotation.x = -Math.PI / 2;
+        terrain.receiveShadow = true;
+        scene.add(terrain);
+
+        // Collines
+        const hillsGroup = new THREE.Group();
+        const hillPositions = [
+            { x: 200, z: 0, scale: 0.7 },
+            { x: -200, z: 0, scale: 0.7 },
+            { x: 0, z: 200, scale: 0.8 },
+            { x: 0, z: -200, scale: 0.8 }
+        ];
+        
+        hillPositions.forEach(pos => {
+            const hillGeometry = new THREE.ConeGeometry(80 * pos.scale, 100 * pos.scale, 32);
+            const hillMaterial = new THREE.MeshStandardMaterial({
+                color: 0x4A3728,
+                roughness: 0.85,
+                metalness: 0
+            });
+            const hill = new THREE.Mesh(hillGeometry, hillMaterial);
+            hill.position.set(pos.x, 50 * pos.scale, pos.z);
+            hill.castShadow = true;
+            hill.receiveShadow = true;
+            hillsGroup.add(hill);
+        });
+        scene.add(hillsGroup);
+
+        // Étoiles
+        const starsGeometry = new THREE.BufferGeometry();
+        const starsMaterial = new THREE.PointsMaterial({
+            color: 0xFFD700,
+            size: 2,
+            sizeAttenuation: true
+        });
+        const starsVertices = [];
+        for (let i = 0; i < 500; i++) {
+            const x = (Math.random() - 0.5) * 2000;
+            const y = Math.random() * 1500 + 500;
+            const z = (Math.random() - 0.5) * 2000;
+            starsVertices.push(x, y, z);
+        }
+        starsGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(starsVertices), 3));
+        const stars = new THREE.Points(starsGeometry, starsMaterial);
+        scene.add(stars);
+
+        // Interpoler la caméra
+        function smoothCameraTransition(targetPos, targetLook) {
+            const startPos = { x: camera.position.x, y: camera.position.y, z: camera.position.z };
+            const startTime = Date.now();
+            const duration = 2000;
+
+            function animate() {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const easeProgress = progress < 0.5 ? 2 * progress * progress : -1 + (4 - 2 * progress) * progress;
+
+                camera.position.x = startPos.x + (targetPos.x - startPos.x) * easeProgress;
+                camera.position.y = startPos.y + (targetPos.y - startPos.y) * easeProgress;
+                camera.position.z = startPos.z + (targetPos.z - startPos.z) * easeProgress;
+
+                camera.lookAt(targetLook.x, targetLook.y, targetLook.z);
+
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                }
+            }
+            animate();
+        }
+
+        // Animation du texte
+        function animateTextFadeIn(element) {
+            element.classList.remove('text-fading-out');
+            element.style.animation = 'none';
+            setTimeout(() => {
+                element.style.animation = '';
+            }, 10);
+        }
+
+        function animateTextFadeOut(element) {
+            element.classList.add('text-fading-out');
+        }
+
+        // Mettre à jour la scène avec texte
+        function updateScene(sceneIndex) {
+            currentScene = sceneIndex;
+            const sceneData = scenes[sceneIndex];
+            
+            // Fade out ancien texte
+            animateTextFadeOut(narrativeText);
+            
+            setTimeout(() => {
+                sceneTitle.textContent = sceneData.title;
+                narrativeText.innerHTML = sceneData.text.replace(/\n/g, '<br>');
+                sceneNumber.textContent = sceneIndex + 1;
+                
+                // Fade in nouveau texte
+                animateTextFadeIn(narrativeText);
+            }, 300);
+            
+            smoothCameraTransition(sceneData.cameraPos, sceneData.cameraTarget);
+        }
+
+        // Gestion de la musique
+        function playAudio() {
+            if (!audioElement) {
+                audioElement = new Audio('Celestial_Clash_of_Empires.wav');
+                audioElement.addEventListener('ended', () => {
+                    isPlaying = false;
+                    playBtn.textContent = '▶ RELANCER L\'ÉPOPÉE';
+                });
+            }
+
+            isPlaying = true;
+            playBtn.textContent = '⏸ PAUSE';
+            audioElement.currentTime = 0;
+            audioElement.play().catch(err => console.error('Erreur audio:', err));
+
+            // Suivi de la progression
+            const updateProgress = setInterval(() => {
+                if (!audioElement || audioElement.paused) {
+                    clearInterval(updateProgress);
+                    return;
+                }
+
+                const progress = (audioElement.currentTime / audioElement.duration) * 100;
+                progressFill.style.width = progress + '%';
+
+                // Changement de scène basé sur le temps
+                let timeCounter = 0;
+                for (let i = 0; i < scenes.length; i++) {
+                    if (audioElement.currentTime < timeCounter + scenes[i].duration) {
+                        if (i !== currentScene) {
+                            updateScene(i);
+                        }
+                        break;
+                    }
+                    timeCounter += scenes[i].duration;
+                }
+            }, 100);
+        }
+
+        function pauseAudio() {
+            isPlaying = false;
+            playBtn.textContent = '▶ REPRENDRE';
+            audioElement.pause();
+        }
+
+        // Bouton de lecture
+        playBtn.addEventListener('click', () => {
+            if (isPlaying) {
+                pauseAudio();
+            } else {
+                playAudio();
+            }
+        });
+
+        // Gestion du redimensionnement
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Rotation légère de la montagne
+        function animationLoop() {
+            requestAnimationFrame(animationLoop);
+            mountain.rotation.y += 0.0002;
+            renderer.render(scene, camera);
+        }
+
+        updateScene(0);
+        animationLoop();
+    </script>
+</body>
+</html>
